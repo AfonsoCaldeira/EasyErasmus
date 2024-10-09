@@ -1,0 +1,57 @@
+leteapiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: app
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: app
+  template:
+    metadata:
+      labels:
+        app: app
+    spec:
+      containers:
+        - name: app
+          image: afonsocaldeira00/easyerasmus:tag
+          ports:
+            - containerPort: 8080
+          volumeMounts:
+            - name: app-env
+              mountPath: /app/.env
+              subPath: .env
+              readOnly: true
+      volumes:
+        - name: app-env
+          configMap:
+             name: app-config
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: app
+spec:
+  selector:
+    app: app
+  ports:
+    - protocol: TCP
+      port: 8080
+      targetPort: 8080
+      nodePort: 30080
+  type: NodePort
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: app-config
+data:
+  .env: |
+    COOKIE_SECRET=This is a secret
+    DB_USER=postgres
+    DB_NAME=db
+    DB_PASS=bananas
+    DB_REPLICATION_USER=repl_user
+    DB_REPLICATION_PASSWORD=repl_password
+    DB_HOST=postgresql-master
+    DB_PORT=5432  

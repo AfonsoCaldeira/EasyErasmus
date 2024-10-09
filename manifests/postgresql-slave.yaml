@@ -1,0 +1,60 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: postgresql-slave
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: postgresql-slave
+  template:
+    metadata:
+      labels:
+        app: postgresql-slave
+    spec:
+      containers:
+        - name: postgresql-slave
+          image: bitnami/postgresql
+          ports:
+            - containerPort: 5432
+          # volumeMounts:
+          #   - name: postgresql-slave-data
+          #     mountPath: /bitnami/postgresql
+          env:
+            - name: POSTGRESQL_PGAUDIT_LOG
+              value: "READ"
+            - name: POSTGRESQL_LOG_HOSTNAME
+              value: "true"
+            - name: POSTGRESQL_REPLICATION_MODE
+              value: "slave"
+            - name: POSTGRESQL_REPLICATION_USER
+              value: "repl_user"
+            - name: POSTGRESQL_REPLICATION_PASSWORD
+              value: "repl_password"
+            - name: POSTGRESQL_MASTER_HOST
+              value: "postgresql-master"
+            - name: POSTGRESQL_MASTER_PORT_NUMBER
+              value: "5432"
+            - name: POSTGRESQL_USERNAME
+              value: "postgres"
+            - name: POSTGRESQL_PASSWORD
+              value: "bananas"
+            - name: ALLOW_EMPTY_PASSWORD
+              value: "yes"
+      # volumes:
+      # - name: postgresql-slave-data
+      #   hostPath:
+      #       path: /mnt/postgresql-slave-data
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgresql-slave
+spec:
+  selector:
+    app: postgresql-slave
+  ports:
+    - protocol: TCP
+      port: 5432
+      targetPort: 5432
+  type: ClusterIP

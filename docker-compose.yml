@@ -1,0 +1,91 @@
+version: "3"
+services:
+  app:
+    build:
+      context: ./app
+      dockerfile: Dockerfile
+    container_name: app
+    ports:
+      - "8080:8080"
+    volumes:
+      - app:/usr/src/app
+    restart: always
+    depends_on:
+      - postgresql-master
+    env_file: .env
+    networks:
+      - private-network
+  
+  postgresql-master:
+    image: bitnami/postgresql
+    container_name: postgresql-master
+    restart: always
+    #env_file: .env
+    ports:
+      - '5433:5432'
+    volumes:
+      - postgresql_master_data:/bitnami/postgresql
+     # - ./db.sql:/docker-entrypoint-initdb.d/db.sql
+    environment:
+      - POSTGRESQL_PGAUDIT_LOG=READ,WRITE
+      - POSTGRESQL_LOG_HOSTNAME=true
+      - POSTGRESQL_REPLICATION_MODE=master
+      - POSTGRESQL_REPLICATION_USER=repl_user
+      - POSTGRESQL_REPLICATION_PASSWORD=repl_password
+      - POSTGRESQL_USERNAME=$DB_USER
+      - POSTGRESQL_PASSWORD=$DB_PASS
+      - POSTGRESQL_DATABASE=$DB_NAME
+      - ALLOW_EMPTY_PASSWORD=yes
+    networks:
+      - private-network
+  
+  postgresql-slave:
+    image: bitnami/postgresql
+    container_name: postgresql-slave
+    restart: always
+    #env_file: .env
+    ports:
+      - '5434:5432'
+    volumes:
+      - postgresql_slave_data:/bitnami/postgresql
+    depends_on:
+      - postgresql-master
+    environment:
+      - POSTGRESQL_USERNAME=$DB_USER
+      - POSTGRESQL_PASSWORD=$DB_PASS
+      - POSTGRESQL_MASTER_HOST=postgresql-master
+      - POSTGRESQL_PGAUDIT_LOG=READ
+      - POSTGRESQL_LOG_HOSTNAME=true
+      - POSTGRESQL_REPLICATION_MODE=slave
+      - POSTGRESQL_REPLICATION_USER=repl_user
+      - POSTGRESQL_REPLICATION_PASSWORD=repl_password
+      - POSTGRESQL_MASTER_PORT_NUMBER=5432
+      - ALLOW_EMPTY_PASSWORD=yes
+    networks:
+      - private-network
+
+networks:
+  private-network:
+    driver: bridge
+volumes:
+  postgresql_master_data:
+    name: postgresql_master_data
+  postgresql_slave_data:
+    name: postgresql_slave_data
+  app:
+    name: app
+    driver: local
+
+
+  
+
+
+
+
+    #1-Guardar este arquivo aqui C:\Program Files\PostgreSQL\16\data
+    #2-Linha de comandos como adiministrador
+    #3-cd C:\Program Files\PostgreSQL\16\data
+    #4-docker-compose up 
+    #5-docker pull bitnami/postgresql (não me lembro se é necessário)
+    #Abrir pgAdmin4 
+    #Register server>Master>localhost>5433>postgres>save
